@@ -1,0 +1,440 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logística Inversa - Gestor de Correos v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc; --panel:#ffffff; --text:#0f172a; --muted:#64748b; --border:#e2e8f0;
+  --primary:#0f172a; --primary-hover:#020617;
+  --green:#059669; --green-bg:#ecfdf5; --blue:#2563eb; --amber:#d97706;
+  --input-bg:#f8fafc; --chip-bg:#f1f5f9; --preview-bg:#fffffe;
+  --sidebar-bg:#ffffff; --stat-bg:#ffffff;
+  --raw-bg:#0f172a; --raw-text:#cbd5e1;
+}
+[data-theme="dark"]{
+  --bg:#020617; --panel:#0f172a; --text:#f1f5f9; --muted:#94a3b8; --border:#1e293b;
+  --primary:#f8fafc; --primary-hover:#ffffff;
+  --green:#10b981; --green-bg:#052e1f; --blue:#60a5fa; --amber:#fbbf24;
+  --input-bg:#1e293b; --chip-bg:#1e293b; --preview-bg:#1e293b;
+  --sidebar-bg:#0f172a; --stat-bg:#0f172a;
+  --raw-bg:#020617; --raw-text:#94a3b8;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);transition:background .25s,color .25s}
+/* HEADER */
+.header{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#fff;padding:28px 32px}
+.header-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+.header h1{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.header h1 span{color:#38bdf8}
+.header p{color:#94a3b8;margin-top:6px;font-size:14px}
+.header-actions{display:flex;gap:10px}
+.btn{padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--text);font-weight:500;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:.15s}
+.btn-dark{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff}
+.btn-dark:hover{background:rgba(255,255,255,.15)}
+.btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-sm{padding:7px 12px;font-size:12px;border-radius:8px}
+.btn-ghost{background:transparent;border-color:var(--border)}
+/* STATS */
+.stats-bar{background:var(--stat-bg);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;gap:24px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.stats-bar b{color:var(--text)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot-green{background:var(--green)} .dot-blue{background:var(--blue)} .dot-amber{background:var(--amber)}
+/* MAIN LAYOUT */
+.main{display:flex;max-width:1440px;margin:0 auto;min-height:calc(100vh - 140px)}
+.sidebar{width:380px;border-right:1px solid var(--border);background:var(--sidebar-bg);overflow:auto;max-height:calc(100vh - 140px);position:sticky;top:0}
+.content{flex:1;padding:24px;overflow:auto}
+.search-box{padding:16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--sidebar-bg);z-index:5}
+.search-box input{width:100%;padding:11px 14px 11px 36px;border:1px solid var(--border);border-radius:10px;font-size:13px;outline:none;background:var(--input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") 12px center no-repeat}
+.search-box input:focus{border-color:var(--text);background-color:#fff}
+.filters{display:flex;gap:6px;padding:12px 16px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+.filter{padding:6px 12px;border-radius:99px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:500;cursor:pointer;color:var(--muted)}
+.filter.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.list-item{padding:16px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:.15s}
+.list-item:hover{background:var(--input-bg)}
+.list-item.active{background:var(--chip-bg);border-left:3px solid var(--primary);padding-left:13px}
+.list-item-head{display:flex;justify-content:space-between;gap:8px;align-items:start}
+.list-item-title{font-weight:600;font-size:13.5px;line-height:1.35;display:flex;gap:8px}
+.list-item-meta{font-size:11px;color:var(--muted);margin-top:6px;display:flex;gap:10px}
+.badge{font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 7px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
+.badge-falabella{background:#dbeafe;color:#1e40af} .badge-tottus{background:#fef3c7;color:#92400e}
+.badge-btl{background:#dcfce7;color:#166534} .badge-sso{background:#fee2e2;color:#991b1b}
+.badge-dofa{background:#f3e8ff;color:#6b21a8} .badge-reverse{background:#e0f2fe;color:#0c4a6e}
+/* DETAIL */
+.detail-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:.25s}
+.detail-head{padding:24px;border-bottom:1px solid var(--border)}
+.detail-head h2{font-size:20px;font-weight:700;line-height:1.3}
+.detail-head p{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6}
+.subject-edit{margin-top:16px;display:flex;gap:10px}
+.subject-edit input{flex:1;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font-weight:600;font-size:14px}
+.date-badge{background:#f1f5f9;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid var(--border);white-space:nowrap}
+.detail-body{padding:20px 24px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr} .main{flex-direction:column} .sidebar{width:100%;max-height:400px;position:relative}}
+.email-section{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.email-section-head{padding:12px 14px;background:var(--input-bg);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.email-section-head h4{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.count{font-size:11px;padding:3px 8px;border-radius:99px;background:#fff;border:1px solid var(--border)}
+.count.warn{background:#fef3c7;border-color:#fde68a;color:#92400e}
+.email-chips{padding:12px;display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow:auto}
+.chip{font-family:JetBrains Mono,monospace;font-size:11px;padding:5px 9px;background:var(--chip-bg);border:1px solid var(--border);border-radius:99px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip:hover{background:#e2e8f0}
+.email-raw{padding:10px 12px;background:var(--raw-bg);color:var(--raw-text);font-family:JetBrains Mono,monospace;font-size:11px;max-height:120px;overflow:auto;white-space:pre-wrap;word-break:break-all;display:none}
+.email-raw.show{display:block}
+.actions-bar{padding:16px 24px;background:var(--input-bg);border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap}
+.alert{padding:10px 14px;border-radius:10px;font-size:12px;display:flex;gap:8px;align-items:center;margin-top:12px}
+.alert-amber{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.alert-green{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+.preview{margin-top:20px;border:1px dashed var(--border);border-radius:12px;padding:16px;background:var(--preview-bg)}
+.preview h4{font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;letter-spacing:.05em}
+.preview-body{font-size:13px;line-height:1.7;white-space:pre-wrap}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:12px 20px;border-radius:99px;font-size:13px;display:none;z-index:100;box-shadow:0 12px 24px rgba(0,0,0,.2)}
+.empty{padding:80px 20px;text-align:center;color:var(--muted)}
+.empty h3{color:var(--text);margin-bottom:8px}
+
+/* v3: modo oscuro corregido + elementos nuevos */
+[data-theme="dark"]{color-scheme:dark}
+.btn-primary,.filter.active{color:var(--bg)}
+.btn:not(.btn-dark):not(.btn-primary){background:var(--panel);color:var(--text)}
+.filter{background:var(--panel)}
+.count{background:var(--panel);color:var(--text)}
+.count.warn{background:#fef3c7;color:#92400e}
+.list-item{border-bottom-color:var(--border)}
+.search-box input,.subject-edit input,.msg{color:var(--text);background-color:var(--input-bg)}
+.search-box input:focus{background-color:var(--panel)}
+.chip{cursor:pointer;user-select:none}
+.chip:hover{background:var(--border)}
+.chip.ext{background:#fef3c7;border-color:#fde68a;color:#92400e}
+.chip.off{text-decoration:line-through;opacity:.4}
+.subject-edit{flex-wrap:wrap}
+.subject-edit input[type=date]{flex:none;font-size:12px;padding:8px 10px}
+.msg{width:100%;min-height:170px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font:13px/1.7 Inter,sans-serif;resize:vertical;margin-bottom:10px}
+.hint{font-size:12px;color:var(--muted)}
+.chip.added{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.add-row{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--border)}
+.add-row input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--input-bg);color:var(--text)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>Logística Inversa <span>· Gestor v3</span></h1>
+      <p id="subtitle"></p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-dark" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">🌙 Modo oscuro</button>
+
+      <button class="btn btn-dark" onclick="toggleRaw()">👁️ Ver texto plano</button>
+      <button class="btn btn-dark" onclick="exportAll()">📥 Exportar CSV</button>
+      <button class="btn" style="background:#fff;color:#0f172a" onclick="copyAllClean()">✨ Copiar todo limpio</button>
+    </div>
+  </div>
+</div>
+<div class="stats-bar">
+  <span><span class="dot dot-green"></span> <b id="stat-total">9</b> plantillas</span>
+  <span><span class="dot dot-blue"></span> <b id="stat-emails">0</b> correos únicos</span>
+  <span><span class="dot dot-amber"></span> <b id="stat-dup">0</b> duplicados eliminados</span>
+  <span>📅 <b id="stat-date"></b></span>
+  <span>🔍 <b id="stat-visible">9</b> visibles</span>
+</div>
+<div class="main">
+  <div class="sidebar">
+    <div class="search-box">
+      <input id="search" placeholder="Buscar flujo, nombre, correo...">
+    </div>
+    <div class="filters" id="filters">
+      <button class="filter active" data-f="all">Todos</button>
+      <button class="filter" data-f="falabella">Falabella</button>
+      <button class="filter" data-f="tottus">Tottus</button>
+      <button class="filter" data-f="btl">BTL / Home</button>
+      <button class="filter" data-f="sso">SSO</button>
+      <button class="filter" data-f="dofa">DOFA</button>
+    </div>
+    <div id="list"></div>
+  </div>
+  <div class="content" id="content">
+    <div class="empty"><h3>Selecciona una plantilla</h3><p>Haz clic en la lista de la izquierda para ver detalles, copiar y enviar.</p></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const TEMPLATES = [{"subject_template": "DEVOLUCIONES Y RECHAZOS FALABELLA CD VES -", "greeting": "Buenas noches,", "body": "Se adjunta la data del despacho de las devoluciones desde Qolqas hacia CD VES del día de hoy -", "para_raw": "George Fabrizzio Portillo Utrilla <gportillou@Sagafalabella.com.pe>; \"George Fabrizzio Portillo Utrilla\" <gportillou@Sagafalabella.com.pe>; \"Amberly Yamile Calderón Rodriguez\" <acalderonr@Falabella.com>; \"Pilar Conce Espinoza\" <pconcee@Sagafalabella.com.pe>; \"Patricia Godoy Benito\" <pgodoyb@falabella.pe>; \"Jackeline Fiorella Bravo Delgado\" <jfbravod@Sagafalabella.com.pe>; \"Brietth Xyomara Najarro Torres\" <bnajarro@Falabella.com>; \"Moises Samelvino Campos\" <msamelvinoc@falabella.pe>; \"TEAM XD PERU\" <TEAMXDPERU@Falabella.com>; \"Valeria Estela Arevalo Gonzales\" <varevalog@falabella.com>; \"Tomas Lopez Ramirez\" <tlopezr@Falabella.com>; \"Nicole Pinedo Vera\" <npinedov@sagafalabella.com.pe>; \"David Ariel Mercado\" <damercado@Falabella.com>; \"Javier Enrique Farfan Herrera\" <jefarfan@Falabella.com>; \"Katty Johana Fernandez Bernaola\" <kfernandezb@Falabella.com>; \"Maria Acosta de la Cruz\" <mdcacosta@Falabella.com>; \"Asencio Guevara Layme\" <asguevaral@sagafalabella.com.pe>; \"Jimmy Amanqui\" <jamanqui@sagafalabella.com.pe>; \"SUPERVISORES_XD\" <SUPERVISORES_XD@falabella.onmicrosoft.com>; \"Yarelin Esther Huamani Linares\" <yhuamanil@Sagafalabella.com.pe>; \"Briggite Rodriguez\" <brodriguezu@falabella.pe>; \"Eduardo Calle Urteaga\" <ECALLEU@sagafalabella.com.pe>; \"Sofia del Rosario Heredia Heredia\" <sherediah@sagafalabella.com.pe>; \"LOGISTICA OMNICANAL FAPE\" <logisticaomnicanalfape@Sagafalabella.com.pe>; \"Melanie N Bran Retamozo\" <menanbran@Sagafalabella.com.pe>; \"Perla Fiorella Hernandez Aquiño\" <pfhernandeza@sagafalabella.com.pe>; \"George Fabrizzio Portillo Utrilla\" <gportillou@Sagafalabella.com.pe>; \"Carlos Martin Palacios Pachas\" <cmpalaciosp@falabella.pe>; \"Carlos Martin Palacios Pachas\" <cmpalaciosp@falabella.pe>", "cc_raw": "Inversa WHHD Peru <inversawhhdperu@Falabella.com>; \"TransporteUMBUsHDPERU\" <TransporteUMBUsHDPERU@Falabella.com>; \"Post Venta IL HD Peru\" <postventailhdperu@Falabella.com>; \"David Martin Apeña Gonzales\" <dapenag@Sagafalabella.com.pe>; \"Jonathan Calderon\" <jcalderonp@sagafalabella.com.pe>; \"Winston Barber\" <wbarber@sagafalabella.com.pe>; \"Henry Cossio\" <hcossiow@sagafalabella.com.pe>; \"Catalina Rosaura Ana Flores Guerra\" <crfloresg@sagafalabella.com.pe>; \"Scully Cesaria Goñe Llerena\" <sgone@Falabella.com>; \"Pedro Enrique Arias Fasabi\" <pariasf@Falabella.com>", "icon": "📦"}, {"subject_template": "DESPACHO BTL DEVOLUCIONES HOMEPICKUP 1P-", "greeting": "Buenas noches,", "body": "Se adjunta la data del despacho de las devoluciones BTL-", "para_raw": "Amberly Yamile Calderón Rodriguez <acalderonr@Falabella.com>; \"Pedro Enrique Arias Fasabi\" <pariasf@Falabella.com>; \"Victor Arribasplata\" <varribasplatac@falabella.pe>; \"Ruth Mirian Cuaresma Atiquipa\" <rcuaresma@Sagafalabella.com.pe>; \"Logistica Inversa Cdbtl\" <logisticainversacdbtl@Sagafalabella.com.pe>", "cc_raw": "TEAM XD PERU <TEAMXDPERU@Falabella.com>; \"Inversa WHHD Peru\" <inversawhhdperu@Falabella.com>; \"Operaciones_MT_BTL\" <operacionesmtbtl@Sagafalabella.com.pe>; \"LOGISTICA_INVERSA_CDVES\" <LOGISTICA_INVERSA_CDVES@Sagafalabella.com.pe>; \"Sandy Pairazaman\" <spairazaman@falabella.pe>; \"Cristian Pablo Morillo Lagos\" <cpmorillol@falabella.pe>; \"Carlos Martin Palacios Pachas\" <cmpalaciosp@falabella.pe>; \"Angelo Brayan Alvarez Chavez\" <abalvarezch@sagafalabella.com.pe>; \"Jhon Rupay\" <jrupay@sagafalabella.com.pe>; \"G_PE_SF_TRANSPORTESCD\" <G_PE_SF_TRANSPORTESCD@sagafalabella.com.pe>; \"Transporte UMILLA HD\" <transporte.um.hd@Falabella.cl>; \"Eduardo David Mamani Gonzales\" <emamanig@Falabella.com>; \"Melanie N Bran Retamozo\" <menanbran@Sagafalabella.com.pe>; \"Zenayda Angel Flores Fernandez\" <zflores@Falabella.com>", "icon": "🚚"}, {"subject_template": "Flujo Reverse_IL BT BTL a Qolqas -", "greeting": "Buenas noches,", "body": "Se comparte la recepción BTL, contando con las siguientes observaciones", "para_raw": "Jhosmar Antonio Aguilar Vega <jaaguilarv@Falabella.com>; \"Leonardo Bryan Soto Castro\" <lsotoc@falabella.pe>; \"Max Alex Aylas Nicho\" <maylas@Falabella.com>; \"Renzo Zevallos Perez\" <rzevallosp@falabella.com>; \"Ruth Mirian Cuaresma Atiquipa\" <rcuaresma@Sagafalabella.com.pe>; \"Dirsee Olinda Parra Tasayco\" <dparrat@Falabella.com>; \"Pedro Enrique Arias Fasabi\" <pariasf@Falabella.com>; \"Jorge Angelo Rios Ortega\" <jrioso@falabella.pe>; \"Sofia del Rosario Heredia Heredia\" <sherediah@Sagafalabella.com.pe>; \"Sheyla Geraldyne Leon Aguilar\" <sleonag@falabella.pe>; \"Melanie Nicolle Green Peña\" <mngreenp@sagafalabella.com.pe>; \"Valeria Estela Arevalo Gonzales\" <varevalog@Falabella.com>; \"Miguel Angel Flores Chura\" <mafloresch@Falabella.com>; \"Mauricio Fidel Martinez Gamboa\" <mfmartinez@Falabella.com>; \"Tomas Lopez Ramirez\" <tlopezr@Falabella.com>; \"Carlos Eduardo Quintero Rincon\" <cequintero@Falabella.com>; \"Rafael Fiestas Chavez\" <wfiestas@sagafalabella.com.pe>; \"Procesos&MejoraContinua_FCOM_PE\" <ProcesosyMejoraContinua_FCOM_PE@Falabella.com>; \"Javier Enrique Farfan Herrera\" <jefarfan@Falabella.com>; \"Midori Namisato Maetahara\" <mnamisato@Falabella.com>; \"Diego Augusto Neyra Rangel\" <dneyrar@Falabella.com>; \"Maria Acosta de la Cruz\" <mdcacosta@Falabella.com>; \"Nicole Pinedo Vera\" <npinedov@sagafalabella.com.pe>; \"Eduardo Calle Urteaga\" <ECALLEU@sagafalabella.com.pe>; \"Jorge Ayala\" <jayalap@sagafalabella.com.pe>; \"Michelle Maribel Bañon Quinto\" <mbanon@Falabella.com>; \"Yamal Jarek Farach Prieto\" <yfarach@Sagafalabella.com.pe>; \"Alex Gomez\" <agomezm@Sagafalabella.com.pe>; \"Inversa WHHD Peru\" <inversawhhdperu@Falabella.com>; \"Jessica Patricia Campos Sosa\" <jpcamposs@falabella.pe>; \"Marianela Velasque Palomino\" <mvelasquep@falabella.pe>; \"Victor Arribasplata\" <varribasplatac@falabella.pe>; \"Eduardo David Mamani Gonzales\" <emamanig@Falabella.com>; \"Oscar Daniel Valverde Ludeña\" <ovalverde@Falabella.com>; \"Zenayda Angel Flores Fernandez\" <zflores@Falabella.com>", "cc_raw": "Operaciones_MT_BTL <operacionesmtbtl@Sagafalabella.com.pe>; \"OPERACIONES BTL\" <OPERACIONESBTL@sagafalabella.com.pe>; \"LOGISTICA OMNICANAL FAPE\" <logisticaomnicanalfape@Sagafalabella.com.pe>; \"G_FACTURACION_TRANSPORTES\" <G_FACTURACION_TRANSPORTES@sagafalabella.com.pe>; \"Angelo Brayan Alvarez Chavez\" <abalvarezch@sagafalabella.com.pe>; \"Joselin Isabel Huamanlazo Chaupin\" <jihuamanlazoc@falabella.pe>", "icon": "🔄"}, {"subject_template": "DEVOLUCIONES Y RECHAZOS TOTTUS -", "greeting": "Buenas noches,", "body": "Se comparte el despacho de Tottus el dia de hoy", "para_raw": "Renzo Zevallos Perez <rzevallosp@falabella.com>; \"Amberly Yamile Calderón Rodriguez\" <acalderonr@Falabella.com>; \"Guillermo Ticllas\" <gticllas@tottus.com.pe>; \"REPARTOS BSF CD TOTTUS\" <REPARTOS_BSF_CD_TOTTUS@tottus.com.pe>; \"Juan Mendoza\" <jmendozay@tottus.com.pe>; \"Transporte Folios\" <TransporteFolios@tottus.com.pe>; \"mailto:diazaldo089@gmail.com\" <diazaldo089@gmail.com>; \"Phool Deivid Ingaruca Supho\" <pdingaruca@tottus.com.pe>; \"Luis Alberto Cucho Narro\" <lcucho@Falabella.com>; \"Wiliana Escobar Taype\" <wiescobart@tottus.com.pe>; \"Jose Antonio Alarcon Espino\" <jalarcone@Falabella.com>; \"Ronald Felipe Vilca Almendre\" <rfvilcaa@Tottus.com.pe>; \"Fredi Gustavo Escajadillo Sime\" <fescajadillos@Falabella.com>; \"Oscar Daniel Valverde Ludeña\" <ovalverde@Falabella.com>; \"richartfert18@gmail.com\" <richartfert18@gmail.com>; \"Jonathan Alberto Abad Merino\" <jabadm@falabella.com>; \"Ray Erick Quispe Baldeon\" <requispeb@tottus.com.pe>; \"Emma Liliana Merino Lizarbe\" <elmerino@falabella.com>; \"Elizabeth Ruth Herrera  Alcantara\" <eherreraa@falabella.com>", "cc_raw": "TEAM XD PERU <TEAMXDPERU@Falabella.com>; \"Inversa WHHD Peru\" <inversawhhdperu@Falabella.com>; \"Team Inventarios HD Peru\" <teaminventarioshdperu@falabella.com>; \"'Scully Cesaria Goñe Llerena'\" <sgone@Falabella.com>", "icon": "🛒"}, {"subject_template": "DEVOLUCIONES HOME PU 1P FALABELLA CD VES -", "greeting": "Buenas noches,", "body": "Se adjunta la data del despacho de las devoluciones desde Qolqas hacia CD VES del flujo Home PU 1P -", "para_raw": "Amberly Yamile Calderón Rodriguez <acalderonr@Falabella.com>; \"Pilar Conce Espinoza\" <pconcee@Sagafalabella.com.pe>; \"Patricia Godoy Benito\" <pgodoyb@falabella.pe>; \"Jackeline Fiorella Bravo Delgado\" <jfbravod@Sagafalabella.com.pe>; \"Brietth Xyomara Najarro Torres\" <bnajarro@falabella.com>; \"Moises Samelvino Campos\" <msamelvinoc@falabella.pe>; \"TEAM XD PERU\" <TEAMXDPERU@Falabella.com>; \"Valeria Estela Arevalo Gonzales\" <varevalog@Falabella.com>; \"Tomas Lopez Ramirez\" <tlopezr@Falabella.com>; \"Nicole Pinedo Vera\" <npinedov@sagafalabella.com.pe>; \"David Ariel Mercado\" <damercado@Falabella.com>; \"Javier Enrique Farfan Herrera\" <jefarfan@Falabella.com>; \"Katty Johana Fernandez Bernaola\" <kfernandezb@Falabella.com>; \"Maria Acosta de la Cruz\" <mdcacosta@Falabella.com>; \"Asencio Guevara Layme\" <asguevaral@sagafalabella.com.pe>; \"Jimmy Amanqui\" <jamanqui@sagafalabella.com.pe>; \"SUPERVISORES_XD\" <SUPERVISORES_XD@falabella.onmicrosoft.com>; \"'Yarelin Esther Huamani Linares'\" <yhuamanil@sagafalabella.com.pe>; \"Briggite Rodriguez\" <brodriguezu@falabella.pe>; \"Eduardo Calle Urteaga\" <ECALLEU@sagafalabella.com.pe>; \"Sofia del Rosario Heredia Heredia\" <sherediah@Sagafalabella.com.pe>; \"LOGISTICA OMNICANAL FAPE\" <logisticaomnicanalfape@Sagafalabella.com.pe>; \"Perla Fiorella Hernandez Aquiño\" <pfhernandeza@sagafalabella.com.pe>; \"Carlos Martin Palacios Pachas\" <cmpalaciosp@falabella.pe>; \"Pedro Enrique Arias Fasabi\" <pariasf@Falabella.com>", "cc_raw": "Inversa WHHD Peru <inversawhhdperu@Falabella.com>; \"TransporteUMBUsHDPERU\" <transporteumbushdperu@falabella.com>; \"Post Venta IL HD Peru\" <postventailhdperu@Falabella.com>; \"David Martin Apeña Gonzales\" <dapenag@Sagafalabella.com.pe>; \"Jonathan Calderon\" <jcalderonp@sagafalabella.com.pe>; \"Winston Barber\" <wbarber@sagafalabella.com.pe>; \"Henry Cossio\" <hcossiow@sagafalabella.com.pe>; \"Catalina Rosaura Ana Flores Guerra\" <crfloresg@sagafalabella.com.pe>; \"Scully Cesaria Goñe Llerena\" <sgone@Falabella.com>; \"George Fabrizzio Portillo Utrilla\" <gportillou@Sagafalabella.com.pe>; \"Estefany Shirley Olortin Silverio\" <eolortinsi@falabella.pe>", "icon": "🏠"}, {"subject_template": "DESPACHO DEVOLUCIONES HOMEPICKUP 1P -", "greeting": "Buenas noches,", "body": "Se adjunta la data del despacho de las devoluciones desde Qolqas hacia CD VES", "para_raw": "Renzo Zevallos Perez <rzevallosp@falabella.com>; \"Geraldine Mija Palomino\" <gmija@Falabella.com>; \"Operaciones_MT_BTL\" <operacionesmtbtl@Sagafalabella.com.pe>; \"LOGISTICA_INVERSA_CDVES\" <LOGISTICA_INVERSA_CDVES@Sagafalabella.com.pe>; \"Sandy Pairazaman\" <spairazaman@falabella.pe>; \"Ruth Mirian Cuaresma Atiquipa\" <rcuaresma@Sagafalabella.com.pe>; \"Victor Arribasplata\" <varribasplatac@falabella.pe>; \"Cristian Pablo Morillo Lagos\" <cpmorillol@falabella.pe>; \"Carlos Martin Palacios Pachas\" <cmpalaciosp@falabella.pe>; \"Patricia Godoy Benito\" <pgodoyb@falabella.pe>; \"Diana Milagros Trujillo Carhuapoma\" <dmtrujilloc@falabella.pe>", "cc_raw": "Inversa WHHD Peru <inversawhhdperu@Falabella.com>", "icon": "📬"}, {"subject_template": "TOTTUS CAMBIO MANO A MANO-", "greeting": "Buenas noches,", "body": "Se comparte a detalle el despacho de Tottus Cambio mano a mano", "para_raw": "Renzo Zevallos Perez <rzevallosp@falabella.com>; \"Max Alex Aylas Nicho\" <maylas@Falabella.com>; \"Ricardo Jose Pulido Rivera\" <rpulidor@Falabella.com>; \"REPARTOS BSF CD TOTTUS\" <REPARTOS_BSF_CD_TOTTUS@tottus.com.pe>; \"Transporte Folios\" <TransporteFolios@tottus.com.pe>; \"Equipo de Folios HT\" <folios.ht@tottus.com.pe>; \"Zenayda Angel Flores Fernandez\" <zflores@Falabella.com>", "cc_raw": "Inversa WHHD Peru <inversawhhdperu@Falabella.com>; \"TEAM XD PERU\" <TEAMXDPERU@Falabella.com>", "icon": "🤝"}, {"subject_template": "SSO// CREAR REGISTRO", "greeting": "Buenos días,", "body": "Equipo de Operaciones / Soporte, solicito su valioso apoyo con la creación del registro en el TMS para los folios detallados a continuación. Este requerimiento es prioritario para asegurar la continuidad de su flujo logístico y proceder con la devolución en retorno hacia el seller.", "para_raw": "SSO HD PERÚ <SSOHDPERU@Falabella.cl>", "cc_raw": "Inversa WHHD Peru <inversawhhdperu@Falabella.com>", "icon": "⚙️"}, {"subject_template": "RECEPCIÓN ERRORES DOFA BIG TICKET - QOLQAS-", "greeting": "Buenas noches,", "body": "Se confirma la recepción de los folios en mención", "para_raw": "Juan Carlos Barrera Quiroz <jbarreraq@falabella.pe>; \"Jhosmar Antonio Aguilar Vega\" <jaaguilarv@Falabella.com>; \"Ariana Zarela Sotelo Huachua\" <azsoteloh@sagafalabella.com.pe>; \"Josue David Valverde Huaman\" <jvalverdeh@Falabella.com>; \"Luis Hipolito Lopez Flores\" <llopezf@Falabella.com>; \"Jorge Vargas\" <jfvargas@falabella.pe>; \"Bryan Jeymi Chambi Zegarra\" <bchambi@Falabella.com>; \"Roberto Maximo Trigueros Galvez\" <rtrigueros@Falabella.com>; \"Michael Nick Curipaco Soto\" <mcuripaco@Falabella.com>; \"Richael Alexandra Fajardo Carrasco\" <rfajardoc@Falabella.com>; \"Scully Cesaria Goñe Llerena\" <sgone@Falabella.com>; \"Oscar Daniel Valverde Ludeña\" <ovalverde@Falabella.com>; \"Jorge Luis Sanchez Plasencia\" <jlsanchezp@Falabella.com>; \"Anthony German Uscata Contreras\" <auscata@Falabella.com>; \"Pedro Jean Pierre Alvarado Rodriguez\" <palvarado@Falabella.com>; \"Kevin Santiago Garcia Molina\" <kgarcia@Falabella.com>; \"Junior Vidal Menacho Ponte\" <jmenachop@Falabella.com>; \"Yeselie Marilu Luis Morales\" <yluis@Falabella.com>; \"SUPERVISORES_XD\" <SUPERVISORES_XD@falabella.onmicrosoft.com>; \"TEAM XD PERU\" <TEAMXDPERU@Falabella.com>; \"Rubén Anthony Soras  Chambi\" <rsoras@Falabella.com>; \"Javier Enrique Farfan Herrera\" <jefarfan@Falabella.com>; \"Cecilia Andrea Nuñez Alvarez\" <cnuneza@Sagafalabella.com.pe>; \"Joselina Quispe\" <JQUISPE@sagafalabella.com.pe>; \"SSO HD PERÚ\" <SSOHDPERU@Falabella.cl>; \"Inversa WHHD Peru\" <inversawhhdperu@Falabella.com>; \"Naire Dorleska Vegas Blanco\" <nvegasb@Falabella.com>; \"Sergio Alberto Apaza Yanapa\" <sapazay@sagafalabella.com.pe>; \"Sheyla Geraldyne León Aguilar\" <sleona@Falabella.com>; \"Betty Aquino Arista\" <baquino@Falabella.com>; \"Roberto Carlos Bastarrachea Sotomayor\" <rbastarrachea@Falabella.com>; \"G_PE_SF_INGENIERIACD\" <G_PE_SF_INGENIERIACD@sagafalabella.com.pe>; \"procurement.hd\" <procurement.hd@Falabella.com>; \"Javier Antonio La Torre Yesquén\" <jlatorrey@Falabella.com>; \"Claudia Alejandra Cavero Quispe\" <ccavero@Falabella.com>; \"Miguel Angel Casiel Arteaga Arango\" <maarteagaa@Falabella.com>; \"Luis Alexander Sanchez Sandoval\" <lasanchezs@Falabella.com>; \"Varenka Nunez Lazo\" <vnulazo@sagafalabella.com.pe>; \"LOGISTICA OMNICANAL FAPE\" <logisticaomnicanalfape@Sagafalabella.com.pe>; \"G_PE_SF_INGENIERIACD\" <G_PE_SF_INGENIERIACD@sagafalabella.com.pe>; \"Esmeralda Mery Quispe Leiva\" <equispele@sodimac.com.pe>; \"Jesus Manuel Ruiz Quilliuya\" <jruizq@Sodimac.com.pe>; \"Juan Alvaro Palacios Leon\" <jpalaciosl@sodimac.com.pe>; \"Cristofer Mario Rodriguez Rojas\" <crodriguezr@sodimac.com.pe>; \"Angela Johana Bustamante Sedano\" <abustamantese@sodimac.com.pe>; \"SUPERVISORES_XD\" <SUPERVISORES_XD@falabella.onmicrosoft.com>; \"Transporte HD Lima\" <transportehdlima@Falabella.com>; \"Pedro Enrique Arias Fasabi\" <pariasf@Falabella.com>; \"Inversa WHHD Peru\" <inversawhhdperu@Falabella.com>; \"Joselin Isabel Huamanlazo Chaupin\" <jihuamanlazoc@falabella.pe>; \"G_PE_SF_TRANSPORTESCD\" <G_PE_SF_TRANSPORTESCD@sagafalabella.com.pe>; \"Jesus Miguel Tito Inca\" <jmtitoi@Falabella.pe>; \"Alexander Eduardo Perez Sullca\" <aeperezs@sagafalabella.com.pe>; \"Paulo Cesar Estrada Suarez\" <pcestradas@falabella.pe>; \"Ariana Zarela Sotelo Huachua\" <azsoteloh@sagafalabella.com.pe>; \"Yomira Katherine Anticona Cosar\" <ykanticonac@Sagafalabella.com.pe>; \"Yohann Lucianeti Pairazaman Tello\" <ylpairazaman@sagafalabella.com.pe>", "cc_raw": "Gladys Eliana Mercedes Apaza <gmercedes@Falabella.com>; \"Henry Cossio\" <hcossiow@sagafalabella.com.pe>; \"Jimmy Amanqui\" <jamanqui@sagafalabella.com.pe>; \"Arenas Anthony\" <aarenas@sagafalabella.com.pe>; \"Harold Zavala\" <hzavala@sagafalabella.com.pe>; \"Fiorela Vanessa Puma Teran\" <fvpumat@falabella.pe>; \"Garita CD Villa el Salvador 2\" <garitacdvs2@sagafalabella.com.pe>; \"Piero Llacuachaqui T\" <pillacuachaquit@falabella.pe>; \"Willian Joel Carreño Navarro\" <wcarrenon@falabella.pe>", "icon": "⚠️"}];
+
+// Dominios corporativos conocidos; cualquier otro se marca como "externo"
+const CORP=['falabella.com','falabella.pe','sagafalabella.com.pe','tottus.com.pe','falabella.cl','sodimac.com.pe','falabella.onmicrosoft.com'];
+const isoToday=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const fmt=iso=>iso.split('-').reverse().join('/');
+let dateVal=isoToday(), currentIdx=0, showRaw=false, activeFilter='all', searchQ='', visibleIdx=[], toastTimer;
+const T=()=>TEMPLATES[currentIdx];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function cat(s){
+  s=s.toLowerCase();
+  if(s.includes('tottus')) return {key:'tottus', label:s.includes('mano a mano')?'Tottus MM':'Tottus', cls:'badge-tottus'};
+  if(/\bsso\b/.test(s)) return {key:'sso', label:'SSO', cls:'badge-sso'};
+  if(s.includes('dofa')||s.includes('rcep')||s.includes('errores')||s.includes('big ticket')) return {key:'dofa', label:'DOFA', cls:'badge-dofa'};
+  if(s.includes('reverse')) return {key:'btl', label:'Reverse', cls:'badge-reverse'};
+  if(s.includes('home')) return {key:'btl', label:'Home PU', cls:'badge-btl'};
+  if(s.includes('btl')) return {key:'btl', label:'BTL', cls:'badge-btl'};
+  return {key:'falabella', label:'Falabella', cls:'badge-falabella'};
+}
+
+// Lee "Nombre <correo>; correo2; ..." y devuelve [{email,name}]
+function parse(raw){
+  return (raw||'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>{
+    const m=s.match(/<([^<>]+)>/);
+    const email=(m?m[1]:s).replace(/^mailto:/i,'').replace(/['"]/g,'').trim().toLowerCase();
+    const name=m?s.slice(0,m.index).replace(/["']/g,'').replace(/^mailto:\S*/i,'').trim():'';
+    return {email,name};
+  }).filter(x=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x.email));
+}
+// Deduplica en runtime: PARA primero; en CC se quita lo que ya está en PARA o repetido
+TEMPLATES.forEach(t=>{
+  const seen=new Set(), p=parse(t.para_raw), c=parse(t.cc_raw);
+  t.para=[]; t.cc=[]; t.pDup=0; t.cDup=0; t.pTotal=p.length; t.cTotal=c.length;
+  p.forEach(x=>seen.has(x.email)?t.pDup++:(seen.add(x.email),t.para.push(x)));
+  c.forEach(x=>seen.has(x.email)?t.cDup++:(seen.add(x.email),t.cc.push(x)));
+  t.off=new Set(); t.subj=null; t.msg=null;
+});
+
+// Destinatarios agregados por el usuario (se guardan en este navegador)
+const EXTRA_KEY='correos-extra';
+const loadExtra=()=>{try{return JSON.parse(localStorage.getItem(EXTRA_KEY))||{}}catch(e){return {}}};
+function saveExtra(){
+  const o={};
+  TEMPLATES.forEach(t=>{
+    const pa=t.para.filter(x=>x.added), ca=t.cc.filter(x=>x.added);
+    if(pa.length||ca.length) o[t.subject_template]={para:pa.map(({email,name})=>({email,name})),cc:ca.map(({email,name})=>({email,name}))};
+  });
+  try{localStorage.setItem(EXTRA_KEY,JSON.stringify(o))}catch(e){}
+}
+(()=>{const ex=loadExtra(); TEMPLATES.forEach(t=>{
+  const e=ex[t.subject_template]; if(!e) return;
+  const have=new Set([...t.para,...t.cc].map(x=>x.email));
+  ['para','cc'].forEach(k=>(e[k]||[]).forEach(x=>{ if(x&&x.email&&!have.has(x.email)){have.add(x.email); t[k].push({email:x.email,name:x.name||'',added:true});} }));
+});})();
+
+const isExt=e=>!CORP.some(d=>e.endsWith('@'+d));
+const inc=(t,k)=>t[k].filter(x=>!t.off.has(x.email)).map(x=>x.email);
+const subjectOf=t=>t.subj??(t.subject_template+' '+fmt(dateVal));
+function defaultMsg(t){
+  const att=/a continuaci|se confirma/i.test(t.body)?'':'Se adjunta la data correspondiente.\n\n';
+  return `${t.greeting}\n\n${t.body}\n\n${att}Quedo atento.\nSaludos.`;
+}
+const messageOf=t=>t.msg??defaultMsg(t);
+
+function renderList(){
+  const listEl=$('list'); listEl.innerHTML=''; visibleIdx=[];
+  TEMPLATES.forEach((t,i)=>{
+    const c=cat(t.subject_template+' '+t.body);
+    const hay=(t.subject_template+' '+t.body+' '+t.para_raw+' '+t.cc_raw).toLowerCase();
+    if(activeFilter!=='all' && c.key!==activeFilter) return;
+    if(searchQ && !hay.includes(searchQ.toLowerCase())) return;
+    visibleIdx.push(i);
+    const d=t.pDup+t.cDup, off=t.off.size;
+    const div=document.createElement('div');
+    div.className='list-item'+(i===currentIdx?' active':'');
+    div.onclick=()=>select(i,true);
+    div.innerHTML=`<div class="list-item-head"><div class="list-item-title">${t.icon} ${esc(t.subject_template)}</div><span class="badge ${c.cls}">${c.label}</span></div><div class="list-item-meta"><span>PARA ${t.para.length} / CC ${t.cc.length}</span>${d?`<span style="color:var(--amber)">• ${d} dup eliminados</span>`:''}${off?`<span>• ${off} excluidos</span>`:''}</div>`;
+    listEl.appendChild(div);
+  });
+  if(!visibleIdx.length) listEl.innerHTML='<div class="empty"><h3>Sin resultados</h3><p>Prueba con otra búsqueda o filtro.</p></div>';
+  $('stat-visible').textContent=visibleIdx.length;
+}
+
+function select(idx,scroll){
+  currentIdx=idx; renderList(); renderDetail();
+  if(scroll && window.innerWidth<=900) $('content').scrollIntoView({behavior:'smooth'});
+}
+
+function chips(t,k){
+  if(!t[k].length) return '<span class="hint">Sin CC</span>';
+  return t[k].map(x=>{
+    const ext=isExt(x.email), off=t.off.has(x.email);
+    return `<span class="chip${ext?' ext':''}${off?' off':''}${x.added?' added':''}" data-e="${esc(x.email)}"${x.added?' data-a="1"':''} title="${esc((x.name||'Sin nombre')+(ext?' · dominio externo':'')+(x.added?' · agregado por ti — clic para quitar':' — clic para '+(off?'incluir':'excluir')))}">${x.added?'＋ ':''}${esc(x.email)}</span>`;
+  }).join('');
+}
+
+function renderDetail(){
+  const t=T(), c=cat(t.subject_template+' '+t.body);
+  const dups=t.pDup+t.cDup, ext=[...t.para,...t.cc].filter(x=>isExt(x.email));
+  const dupAlert=dups
+    ? `<div class="alert alert-amber">⚠️ Se eliminaron ${dups} correos duplicados automáticamente (de ${t.pTotal+t.cTotal} → ${t.para.length+t.cc.length} únicos).</div>`
+    : `<div class="alert alert-green">✅ Lista limpia, sin duplicados.</div>`;
+  const extAlert=ext.length?`<div class="alert alert-amber">🌐 Dominio externo: ${ext.map(x=>esc(x.email)).join(', ')}. Confirma que deban recibir esta información.</div>`:'';
+  const sec=(k,label)=>{
+    const d=k==='para'?t.pDup:t.cDup, off=t[k].filter(x=>t.off.has(x.email)).length, n=t[k].length-off;
+    return `<div class="email-section"><div class="email-section-head"><h4>${label} — ${off?`${n} de ${t[k].length}`:`${n} únicos`}</h4><div style="display:flex;gap:6px"><span class="count ${d?'warn':''}">${d?d+' dup':'limpio'}</span><button class="btn btn-sm" onclick="copyClean('${k}')">📋 Copiar</button></div></div><div class="email-chips">${chips(t,k)}</div><div class="add-row"><input class="add-in" data-k="${k}" placeholder="Agregar correo(s) a ${label}..." aria-label="Agregar a ${label}"><button class="btn btn-sm btn-primary" onclick="addFrom('${k}')">＋ Agregar</button></div><div class="email-raw ${showRaw?'show':''}">${esc(inc(t,k).join('; '))}</div></div>`;
+  };
+  $('content').innerHTML=`
+  <div class="detail-card">
+    <div class="detail-head">
+      <span class="badge ${c.cls}">${c.label}</span>
+      <h2>${t.icon} ${esc(t.subject_template)}</h2>
+      <div class="subject-edit">
+        <input id="subjectInput" value="${esc(subjectOf(t))}" oninput="T().subj=this.value" aria-label="Asunto">
+        <input type="date" id="dateIn" value="${dateVal}" onchange="setDate(this.value)" title="Fecha del asunto" aria-label="Fecha del asunto">
+        <button class="btn btn-sm btn-primary" onclick="copySubject()">📋 Copiar asunto</button>
+      </div>
+      ${dupAlert}${extAlert}
+    </div>
+    <div class="detail-body">
+      <div class="grid2">${sec('para','PARA')}${sec('cc','CC')}</div>
+      <p class="hint" style="margin-top:10px">Toca un correo para excluirlo solo de este envío. Los agregados por ti (verdes) se guardan en este navegador; tócalos para quitarlos.</p>
+      <div class="preview">
+        <h4>Mensaje (editable)</h4>
+        <textarea class="msg" id="msgIn" oninput="T().msg=this.value" aria-label="Mensaje">${esc(messageOf(t))}</textarea>
+        <button class="btn btn-sm btn-ghost" onclick="resetEdits()">↺ Restaurar texto original</button>
+      </div>
+    </div>
+    <div class="actions-bar">
+      <button class="btn btn-primary" onclick="compose('outlook')">✉️ Abrir en Outlook</button>
+      <button class="btn" onclick="compose('gmail')">📧 Abrir en Gmail</button>
+      <button class="btn btn-ghost" onclick="copyClean('all')">📦 Copiar PARA+CC</button>
+      <button class="btn btn-ghost" onclick="copyMailtoLink()">🔗 Copiar link mailto</button>
+    </div>
+  </div>`;
+}
+
+function updateStats(){
+  $('stat-emails').textContent=new Set(TEMPLATES.flatMap(t=>[...t.para,...t.cc].map(x=>x.email))).size;
+}
+function addFrom(k){
+  const input=document.querySelector(`.add-in[data-k="${k}"]`); if(!input) return;
+  const raw=input.value.trim(); if(!raw) return;
+  const t=T();
+  const norm=raw.includes('<')?raw.replace(/[\r\n]+/g,';'):raw.replace(/[,\s]+/g,';');
+  const items=parse(norm);
+  if(!items.length){ toast('⚠️ No encontré ningún correo válido'); return; }
+  const other=k==='para'?'cc':'para';
+  let added=0, dup=0, inOther=0;
+  items.forEach(x=>{
+    if(t[k].some(y=>y.email===x.email)){dup++; return;}
+    if(t[other].some(y=>y.email===x.email)){inOther++; return;}
+    t[k].push({email:x.email,name:x.name,added:true}); added++;
+  });
+  saveExtra(); renderDetail(); renderList(); updateStats();
+  const again=document.querySelector(`.add-in[data-k="${k}"]`); if(again) again.focus();
+  const parts=[]; if(added) parts.push(`✅ ${added} agregado${added>1?'s':''} a ${k.toUpperCase()}`);
+  if(dup) parts.push(`${dup} ya estaba${dup>1?'n':''}`);
+  if(inOther) parts.push(`${inOther} ya está${inOther>1?'n':''} en ${other.toUpperCase()}`);
+  toast(parts.join(' · '));
+}
+function removeAdded(e){
+  const t=T(); ['para','cc'].forEach(k=>t[k]=t[k].filter(x=>!(x.added&&x.email===e)));
+  t.off.delete(e); saveExtra(); renderDetail(); renderList(); updateStats(); toast('🗑️ Correo quitado');
+}
+function toggleOff(e){const t=T(); t.off.has(e)?t.off.delete(e):t.off.add(e); renderDetail(); renderList();}
+function setDate(v){ if(!v) return; dateVal=v; TEMPLATES.forEach(x=>x.subj=null); $('stat-date').textContent=fmt(v); renderDetail(); }
+function resetEdits(){const t=T(); t.subj=null; t.msg=null; t.off.clear(); renderDetail(); renderList(); toast('↺ Texto restaurado');}
+
+function copyText(text,okMsg){
+  const done=()=>toast(okMsg);
+  const fallback=()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done()}catch(e){toast('⚠️ No se pudo copiar')}ta.remove()};
+  if(navigator.clipboard&&window.isSecureContext) navigator.clipboard.writeText(text).then(done,fallback); else fallback();
+}
+function copyClean(type){
+  const t=T(), p=inc(t,'para'), c=inc(t,'cc');
+  const text=type==='para'?p.join('; '):type==='cc'?c.join('; '):'PARA:\n'+p.join('; ')+'\n\nCC:\n'+c.join('; ');
+  const n=type==='para'?p.length:type==='cc'?c.length:p.length+c.length;
+  copyText(text,`✅ ${type==='all'?'PARA+CC':type.toUpperCase()} copiado (${n} correos)`);
+}
+function copySubject(){copyText($('subjectInput').value,'✅ Asunto copiado');}
+function copyAllClean(){
+  const uniq=[...new Set(TEMPLATES.flatMap(t=>[...t.para,...t.cc].map(x=>x.email)))];
+  copyText(uniq.join('; '),`✅ ${uniq.length} correos únicos copiados de todas las plantillas`);
+}
+
+const MAX_URL=1900; // Outlook/Gmail ignoran enlaces más largos
+function buildUrl(kind,withRecipients){
+  const t=T(), p=inc(t,'para'), c=inc(t,'cc');
+  const sub=encodeURIComponent($('subjectInput').value);
+  const body=encodeURIComponent($('msgIn').value.replace(/\n/g,'\r\n'));
+  if(kind==='gmail'){
+    const r=withRecipients?`&to=${encodeURIComponent(p.join(','))}&cc=${encodeURIComponent(c.join(','))}`:'';
+    return `https://mail.google.com/mail/?view=cm&fs=1${r}&su=${sub}&body=${body}`;
+  }
+  return `mailto:${withRecipients?p.join(';'):''}?${withRecipients&&c.length?`cc=${c.join(';')}&`:''}subject=${sub}&body=${body}`;
+}
+function compose(kind){
+  let url=buildUrl(kind,true);
+  if(url.length>MAX_URL){
+    const t=T();
+    url=buildUrl(kind,false);
+    copyText('PARA:\n'+inc(t,'para').join('; ')+'\n\nCC:\n'+inc(t,'cc').join('; '),'⚠️ Son demasiados destinatarios para el enlace: copié PARA y CC, pégalos en el correo');
+  }
+  kind==='gmail'?window.open(url,'_blank'):window.location.href=url;
+}
+function copyMailtoLink(){
+  const url=buildUrl('outlook',true);
+  copyText(url,url.length>MAX_URL?'🔗 Link copiado, pero es muy largo y Outlook podría ignorarlo':'🔗 Link mailto copiado');
+}
+
+function toggleRaw(){
+  showRaw=!showRaw;
+  document.querySelectorAll('.email-raw').forEach(el=>el.classList.toggle('show',showRaw));
+  toast(showRaw?'👁️ Texto plano visible':'🙈 Texto plano oculto');
+}
+function exportAll(){
+  const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  let csv='Flujo,Asunto,PARA_Unique_Count,PARA,CC_Unique_Count,CC,Duplicados_Eliminados\n';
+  TEMPLATES.forEach(t=>{
+    csv+=[q(cat(t.subject_template+' '+t.body).label),q(subjectOf(t)),t.para.length,q(t.para.map(x=>x.email).join('; ')),t.cc.length,q(t.cc.map(x=>x.email).join('; ')),t.pDup+t.cDup].join(',')+'\n';
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`correos_limpios_${dateVal}.csv`; a.click();
+  toast('📥 CSV exportado');
+}
+function toast(msg){
+  const el=$('toast'); el.textContent=msg; el.style.display='block';
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.style.display='none',3500);
+}
+
+function initTheme(){
+  const saved=(()=>{try{return localStorage.getItem('correos-theme')}catch(e){return null}})()||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  document.documentElement.setAttribute('data-theme',saved); updateThemeButton(saved);
+}
+function toggleTheme(){
+  const next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  try{localStorage.setItem('correos-theme',next)}catch(e){}
+  updateThemeButton(next);
+}
+function updateThemeButton(theme){ $('themeToggle').innerHTML=theme==='dark'?'☀️ Modo claro':'🌙 Modo oscuro'; }
+
+// init
+initTheme();
+$('subtitle').textContent=`${TEMPLATES.length} flujos · Deduplicado automático · Fecha editable · Listo para Outlook / Gmail`;
+$('stat-total').textContent=TEMPLATES.length;
+$('stat-date').textContent=fmt(dateVal);
+$('stat-emails').textContent=new Set(TEMPLATES.flatMap(t=>[...t.para,...t.cc].map(x=>x.email))).size;
+$('stat-dup').textContent=TEMPLATES.reduce((a,t)=>a+t.pDup+t.cDup,0);
+$('search').addEventListener('input',e=>{searchQ=e.target.value; renderList();});
+$('content').addEventListener('click',e=>{const c=e.target.closest('.chip'); if(c) c.dataset.a?removeAdded(c.dataset.e):toggleOff(c.dataset.e);});
+$('content').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList.contains('add-in')){e.preventDefault(); addFrom(e.target.dataset.k);}});
+document.querySelectorAll('.filter').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); activeFilter=b.dataset.f; renderList();
+}));
+document.addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea')) return;
+  if(e.key==='/'){e.preventDefault(); $('search').focus(); return;}
+  if(e.key!=='ArrowDown'&&e.key!=='ArrowUp') return;
+  const pos=visibleIdx.indexOf(currentIdx), next=visibleIdx[pos+(e.key==='ArrowDown'?1:-1)];
+  if(next!==undefined){e.preventDefault(); select(next);}
+});
+renderList();
+select(0);
+</script>
+</body>
+</html>
